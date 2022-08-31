@@ -8,4 +8,14 @@ router.get("/", async (req, res, next) => {
   });
 });
 
+router.post("/auth", async (req, res, next) => {
+  return res.status(200).json({
+    active: true,
+    scope: "read write",
+    client_id: "test",
+    username: "test-user",
+    exp: 1661967434
+  });
+});
+
 module.exports = router;
