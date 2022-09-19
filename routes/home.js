@@ -1,5 +1,6 @@
 const express = require("express");
 const crypto = require('crypto');
+const { SHA256 } = require("crypto-js");
 const router = express.Router();
 
 const encrypt = (key, data) => {
@@ -51,7 +52,7 @@ router.get("/auth", async (req, res, next) => {
   });
 });
 
-router.post("/encrypt", async (req, res, next) => {
+router.post("/encrypt/account", async (req, res, next) => {
   console.log(req.headers);
   console.log(`req body : ${JSON.stringify(req.body)}`);
   const payload = req.body.payload;
@@ -65,6 +66,30 @@ router.post("/encrypt", async (req, res, next) => {
     return res.status(200).json({
       payload: payloadEncrypted,
       signData: sign,
+    });
+  } catch (e) {
+    return res.status(500).json({
+      error: e.message
+    });
+  }
+});
+
+router.post("/encrypt/sign", async (req, res, next) => {
+  console.log(req.headers);
+  console.log(`req body : ${JSON.stringify(req.body)}`);
+  const payload = req.body.payload;
+  const payloadHash = SHA256(JSON.stringify(payload));
+  const privateKey = req.body.privateKey;
+  try {
+    const payloadEncrypted = encrypt(
+      base64decode(privateKey),
+      payloadHash.toString(),
+    );
+    const sign = await signEncode(payloadEncrypted, base64decode(privateKey));
+    return res.status(200).json({
+      hash: payloadEncrypted,
+      signData: sign,
+      payload: payload,
     });
   } catch (e) {
     return res.status(500).json({
