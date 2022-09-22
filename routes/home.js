@@ -31,7 +31,9 @@ router.get("/", async (req, res, next) => {
 });
 
 router.post("/auth", async (req, res, next) => {
+  console.log('auth path')
   console.log(req.headers);
+  console.log(req.body);
   return res.status(200).json({
     active: true,
     scope: "read write",
@@ -96,6 +98,14 @@ router.post("/encrypt/sign", async (req, res, next) => {
       error: e.message
     });
   }
+});
+
+router.get("/info", async (req, res, next) => {
+  console.log('info path')
+  console.log(req.headers);
+  return res.status(200).json({
+    message: 'this is test getting info.'
+  });
 });
 
 module.exports = router;
