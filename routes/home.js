@@ -33,7 +33,7 @@ router.get("/", async (req, res, next) => {
 router.post("/auth", async (req, res, next) => {
   console.log('auth path')
   console.log(req.headers);
-  console.log(req);
+  console.log(req.body);
   return res.status(200).json({
     active: true,
     scope: "read write",
