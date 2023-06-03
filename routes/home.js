@@ -33,13 +33,13 @@ router.get("/", async (req, res, next) => {
 router.post("/auth", async (req, res, next) => {
   console.log('auth path')
   console.log(req.headers);
-  console.log(req.body);
+  console.log(req);
   return res.status(200).json({
     active: true,
     scope: "read write",
     client_id: "test",
     username: "test-user",
-    exp: 1661967434
+    exp: Math.floor(Date.now()/1000) + 60
   });
 });
 
