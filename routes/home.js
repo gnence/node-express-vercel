@@ -1,26 +1,27 @@
 const express = require("express");
-const crypto = require('crypto');
+const crypto = require("crypto");
 const { SHA256 } = require("crypto-js");
 const router = express.Router();
+const { Web3 } = require("web3");
 
 const encrypt = (key, data) => {
-  const dataBuffer = Buffer.from(data, 'utf8');
+  const dataBuffer = Buffer.from(data, "utf8");
   const encryptedData = crypto.privateEncrypt(
     { key: key, padding: crypto.constants.RSA_PKCS1_PADDING },
-    dataBuffer,
+    dataBuffer
   );
-  return encryptedData.toString('base64');
-}
+  return encryptedData.toString("base64");
+};
 
 const base64decode = (base64) => {
-  const buff = Buffer.from(base64, 'base64');
-  return buff.toString('ascii');
+  const buff = Buffer.from(base64, "base64");
+  return buff.toString("ascii");
 };
 
 const signEncode = async (data, privateKey) => {
   const dataBuffer = Buffer.from(data);
-  const sign = await crypto.sign('SHA256', dataBuffer, privateKey);
-  return sign.toString('base64');
+  const sign = await crypto.sign("SHA256", dataBuffer, privateKey);
+  return sign.toString("base64");
 };
 
 router.get("/", async (req, res, next) => {
@@ -31,7 +32,7 @@ router.get("/", async (req, res, next) => {
 });
 
 router.post("/auth", async (req, res, next) => {
-  console.log('auth path')
+  console.log("auth path");
   console.log(req.headers);
   console.log(req.body);
   return res.status(200).json({
@@ -39,7 +40,7 @@ router.post("/auth", async (req, res, next) => {
     scope: "read write",
     client_id: "test",
     username: "test-user",
-    exp: Math.floor(Date.now()/1000) + 60
+    exp: Math.floor(Date.now() / 1000) + 60,
   });
 });
 
@@ -50,7 +51,7 @@ router.get("/auth", async (req, res, next) => {
     scope: "read write",
     client_id: "test",
     username: "test-user",
-    exp: 1661967434
+    exp: 1661967434,
   });
 });
 
@@ -62,7 +63,7 @@ router.post("/encrypt/account", async (req, res, next) => {
   try {
     const payloadEncrypted = encrypt(
       base64decode(privateKey),
-      JSON.stringify(payload),
+      JSON.stringify(payload)
     );
     const sign = await signEncode(payloadEncrypted, base64decode(privateKey));
     return res.status(200).json({
@@ -71,7 +72,7 @@ router.post("/encrypt/account", async (req, res, next) => {
     });
   } catch (e) {
     return res.status(500).json({
-      error: e.message
+      error: e.message,
     });
   }
 });
@@ -85,7 +86,7 @@ router.post("/encrypt/sign", async (req, res, next) => {
   try {
     const payloadEncrypted = encrypt(
       base64decode(privateKey),
-      payloadHash.toString(),
+      payloadHash.toString()
     );
     const sign = await signEncode(payloadEncrypted, base64decode(privateKey));
     return res.status(200).json({
@@ -95,16 +96,45 @@ router.post("/encrypt/sign", async (req, res, next) => {
     });
   } catch (e) {
     return res.status(500).json({
-      error: e.message
+      error: e.message,
+    });
+  }
+});
+
+router.post("/tnx/sign", async (req, res, next) => {
+  console.log(req.headers);
+  console.log(`req body : ${JSON.stringify(req.body)}`);
+  const { txPayload, key, rpcUrl } = req.body;
+  const web3 = new Web3(rpcUrl);
+  const gasPrice = await web3.eth.getGasPrice();
+  let tx = {
+    ...txPayload,
+    gasPrice,
+  };
+  const estGas = await web3.eth.estimateGas(tx);
+  tx.gas = estGas;
+  try {
+    const { transactionHash, rawTransaction } =
+      await web3.eth.accounts.signTransaction(tx, key);
+    return res.status(200).json({
+      hash: transactionHash,
+      raw: rawTransaction,
+      gasPrice: web3.utils.fromWei(gasPrice.toString(), 'ether'),
+      estGas: estGas.toString(),
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      error: e.message,
     });
   }
 });
 
 router.get("/info", async (req, res, next) => {
-  console.log('info path')
+  console.log("info path");
   console.log(req.headers);
   return res.status(200).json({
-    message: 'this is test getting info.'
+    message: "this is test getting info.",
   });
 });
 
