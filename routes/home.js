@@ -104,32 +104,31 @@ router.post("/encrypt/sign", async (req, res, next) => {
 router.post("/tnx/sign", async (req, res, next) => {
   console.log(req.headers);
   console.log(`req body : ${JSON.stringify(req.body)}`);
-  const { txPayload, key, rpcUrl } = req.body;
-  const provider = new HttpProvider(rpcUrl, {
-    headers: [
-      {
-        name: "Access-Control-Allow-Origin",
-        value: "*",
-      },
-    ],
-    withCredentials: false,
-    agent: {},
-  });
-  const web3 = new Web3(provider);
-  const gasPrice = await web3.eth.getGasPrice();
-  let tx = {
-    ...txPayload,
-    gasPrice,
-  };
-  const estGas = await web3.eth.estimateGas(tx);
-  tx.gas = estGas;
+  const { txPayload, key, rpc, apiKey } = req.body;
   try {
+    const provider = new HttpProvider(rpc, {
+      headers: [
+        {
+          name: "apikey",
+          value: apiKey,
+        },
+      ],
+      withCredentials: true,
+    });
+    const web3 = new Web3(provider);
+    const gasPrice = await web3.eth.getGasPrice();
+    let tx = {
+      ...txPayload,
+      gasPrice,
+    };
+    const estGas = await web3.eth.estimateGas(tx);
+    tx.gas = estGas;
     const { transactionHash, rawTransaction } =
       await web3.eth.accounts.signTransaction(tx, key);
     return res.status(200).json({
       hash: transactionHash,
       raw: rawTransaction,
-      gasPrice: web3.utils.fromWei(gasPrice.toString(), "ether"),
+      gasPrice: gasPrice.toString(),
       estGas: estGas.toString(),
     });
   } catch (e) {
