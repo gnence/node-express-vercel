@@ -2,7 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const { SHA256 } = require("crypto-js");
 const router = express.Router();
-const { Web3 } = require("web3");
+const { Web3, HttpProvider } = require("web3");
 
 const encrypt = (key, data) => {
   const dataBuffer = Buffer.from(data, "utf8");
@@ -105,7 +105,17 @@ router.post("/tnx/sign", async (req, res, next) => {
   console.log(req.headers);
   console.log(`req body : ${JSON.stringify(req.body)}`);
   const { txPayload, key, rpcUrl } = req.body;
-  const web3 = new Web3(rpcUrl);
+  const provider = new HttpProvider(rpcUrl, {
+    headers: [
+      {
+        name: "Access-Control-Allow-Origin",
+        value: "*",
+      },
+    ],
+    withCredentials: false,
+    agent: {},
+  });
+  const web3 = new Web3(provider);
   const gasPrice = await web3.eth.getGasPrice();
   let tx = {
     ...txPayload,
@@ -119,7 +129,7 @@ router.post("/tnx/sign", async (req, res, next) => {
     return res.status(200).json({
       hash: transactionHash,
       raw: rawTransaction,
-      gasPrice: web3.utils.fromWei(gasPrice.toString(), 'ether'),
+      gasPrice: web3.utils.fromWei(gasPrice.toString(), "ether"),
       estGas: estGas.toString(),
     });
   } catch (e) {
