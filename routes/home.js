@@ -2,7 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const { SHA256 } = require("crypto-js");
 const router = express.Router();
-const { Web3, HttpProvider } = require("web3");
+const ethers = require("ethers");
 
 const encrypt = (key, data) => {
   const dataBuffer = Buffer.from(data, "utf8");
@@ -18,9 +18,9 @@ const base64decode = (base64) => {
   return buff.toString("ascii");
 };
 
-const signEncode = async (data, privateKey) => {
+const signEncode = (data, privateKey) => {
   const dataBuffer = Buffer.from(data);
-  const sign = await crypto.sign("SHA256", dataBuffer, privateKey);
+  const sign = crypto.sign("SHA256", dataBuffer, privateKey);
   return sign.toString("base64");
 };
 
@@ -65,7 +65,7 @@ router.post("/encrypt/account", async (req, res, next) => {
       base64decode(privateKey),
       JSON.stringify(payload)
     );
-    const sign = await signEncode(payloadEncrypted, base64decode(privateKey));
+    const sign = signEncode(payloadEncrypted, base64decode(privateKey));
     return res.status(200).json({
       payload: payloadEncrypted,
       signData: sign,
@@ -88,7 +88,7 @@ router.post("/encrypt/sign", async (req, res, next) => {
       base64decode(privateKey),
       payloadHash.toString()
     );
-    const sign = await signEncode(payloadEncrypted, base64decode(privateKey));
+    const sign = signEncode(payloadEncrypted, base64decode(privateKey));
     return res.status(200).json({
       hash: payloadEncrypted,
       signData: sign,
@@ -104,32 +104,12 @@ router.post("/encrypt/sign", async (req, res, next) => {
 router.post("/tnx/sign", async (req, res, next) => {
   console.log(req.headers);
   console.log(`req body : ${JSON.stringify(req.body)}`);
-  const { txPayload, key, rpc, apiKey } = req.body;
+  const { txPayload, key } = req.body;
   try {
-    const provider = new HttpProvider(rpc, {
-      headers: [
-        {
-          name: "apikey",
-          value: apiKey,
-        },
-      ],
-      withCredentials: true,
-    });
-    const web3 = new Web3(provider);
-    const gasPrice = await web3.eth.getGasPrice();
-    let tx = {
-      ...txPayload,
-      gasPrice,
-    };
-    const estGas = await web3.eth.estimateGas(tx);
-    tx.gas = estGas;
-    const { transactionHash, rawTransaction } =
-      await web3.eth.accounts.signTransaction(tx, key);
+    const wallet = new ethers.Wallet(key);
+    const signedTx = await wallet.signTransaction(txPayload);
     return res.status(200).json({
-      hash: transactionHash,
-      raw: rawTransaction,
-      gasPrice: gasPrice.toString(),
-      estGas: estGas.toString(),
+      raw: signedTx,
     });
   } catch (e) {
     console.error(e);
