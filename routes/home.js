@@ -24,6 +24,12 @@ const signEncode = (data, privateKey) => {
   return sign.toString("base64");
 };
 
+const convertObjToUnit8Array = (obj) => {
+   const jsonString = JSON.stringify(obj);
+   const buffer = Buffer.from(jsonString, 'utf8');
+   return new Uint8Array(buffer);
+}
+
 router.get("/", async (req, res, next) => {
   return res.status(200).json({
     title: "Express Testing",
@@ -101,7 +107,7 @@ router.post("/encrypt/sign", async (req, res, next) => {
   }
 });
 
-router.post("/tnx/sign", async (req, res, next) => {
+router.post("/sign/tnx", async (req, res, next) => {
   console.log(req.headers);
   console.log(`req body : ${JSON.stringify(req.body)}`);
   const { txPayload, key } = req.body;
@@ -110,6 +116,24 @@ router.post("/tnx/sign", async (req, res, next) => {
     const signedTx = await wallet.signTransaction(txPayload);
     return res.status(200).json({
       raw: signedTx,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      error: e.message,
+    });
+  }
+});
+
+router.post("/sign/message", async (req, res, next) => {
+  console.log(req.headers);
+  console.log(`req body : ${JSON.stringify(req.body)}`);
+  const { payload, key } = req.body;
+  try {
+    const wallet = new ethers.Wallet(key);
+    const signature = await wallet.signMessage(convertObjToUnit8Array(payload));
+    return res.status(200).json({
+      signature,
     });
   } catch (e) {
     console.error(e);
