@@ -177,13 +177,13 @@ router.post("/sign/message", async (req, res, next) => {
 router.post("/sign/seaport-order", async (req, res, next) => {
   console.log(req.headers);
   console.log(`req body : ${JSON.stringify(req.body)}`);
-  const { orderComponents, domainData, key } = req.body;
+  const { parameters, domain, key } = req.body;
   try {
     const wallet = new ethers.Wallet(key);
     let signature = await wallet.signTypedData(
-      domainData,
+      domain,
       EIP_712_ORDER_TYPE,
-      orderComponents,
+      parameters,
     );
     // Use EIP-2098 compact signatures to save gas.
     if (signature.length === 132) {
